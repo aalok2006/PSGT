@@ -2,6 +2,10 @@
 
 A retro-themed, single-page web application for managing and tracking personal savings goals with multi-user support and an interactive chatbot interface, styled to resemble an old-school computer monitor.
 
+## 🚀 Live Demo
+
+[![Visit Website](https://img.shields.io/badge/Launch%20Website-Click%20Here-brightgreen?style=for-the-badge&logo=firefox-browser)](https://psgt.onrender.com)
+
 ![image](https://github.com/user-attachments/assets/cffff4cd-a50f-4387-b4c6-a45a9da466f1)
 
 
