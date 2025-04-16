@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Add unique identifier to title for clarity -->
+    <title>SAVINGS GOAL TRACKER [5153] - User Specific</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <style>
+        :root {
+            --monitor-bg: #0a0a0a;
+            --monitor-fg: #00ff41;
+            --monitor-fg-dim: #00802b;
+            --monitor-fg-accent: #33ff77;
+            --monitor-border: var(--monitor-fg-dim);
+            --danger-color: #ff4100; /* Also used for High priority */
+            --font-family: "Monospac821 BT", Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace;
+            --transition-speed: 0.15s ease;
+            --cmatrix-bg-alpha: 0.05; /* Slightly adjusted alpha */
+            --cmatrix-font-size: 14px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            border-radius: 0 !important; /* Keep the sharp corners */
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--monitor-bg);
+            color: var(--monitor-fg);
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            text-shadow: 0 0 3px rgba(0, 255, 65, 0.3);
+            overflow-x: hidden; /* Prevent horizontal scroll */
+        }
+
+        #cmatrix-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+            opacity: 0.8; /* Maintain visibility */
+        }
+
+        /* Scanlines effect */
+        body::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0) 0px,
+                rgba(0, 0, 0, 0) 1px,
+                rgba(0, 0, 0, 0.15) 2px, /* Subtle scanlines */
+                rgba(0, 0, 0, 0.15) 3px
+            );
+            opacity: 0.7;
+        }
+
+
+        main {
+            flex-grow: 1;
+            padding: 15px;
+            max-width: 900px;
+            margin: 15px auto;
+            width: 95%;
+            border: 1px solid var(--monitor-border);
+            background-color: rgba(10, 10, 10, 0.85); /* Slightly transparent background */
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            background: var(--monitor-bg);
+            color: var(--monitor-fg);
+            padding: 1rem 0;
+            text-align: center;
+            border-bottom: 2px solid var(--monitor-fg);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            position: relative;
+            z-index: 1;
+        }
+
+        header h1 {
+            font-weight: normal;
+            letter-spacing: 2px;
+            font-size: 1.5rem;
+        }
+
+        /* --- User Greeting and Edit Button --- */
+        #user-greeting {
+            font-weight: normal;
+            display: inline-block;
+            border-bottom: 1px dashed var(--monitor-fg-dim);
+        }
+         #edit-name-btn {
+            font-size: 0.8em;
+            margin-left: 8px;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity var(--transition-speed);
+            display: inline-block; /* Changed from none */
+            vertical-align: middle;
+        }
+        #edit-name-btn:hover {
+            opacity: 1;
+            color: var(--monitor-fg-accent);
+        }
+        #edit-name-btn.hidden { /* Keep hidden class functional */
+             display: none !important;
+        }
+        /* NEW: Style for when no user is set */
+        #user-greeting.no-user {
+            color: var(--danger-color);
+            border-bottom-color: var(--danger-color);
+        }
+
+
+        h2 {
+            color: var(--monitor-fg);
+            margin-bottom: 15px;
+            font-weight: normal;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 1.2rem;
+            border-bottom: 1px solid var(--monitor-border);
+            padding-bottom: 5px;
+            display: block; /* Explicitly block */
+        }
+
+        .card {
+            background-color: transparent;
+            border: 1px solid var(--monitor-border);
+            padding: 15px;
+            margin-bottom: 20px;
+            transition: border-color var(--transition-speed);
+        }
+
+        .card:hover { /* Subtle hover */
+             border-color: var(--monitor-fg-accent);
+             transform: none; /* Disable any scaling/translation */
+             box-shadow: none; /* Disable any shadow */
+        }
+        /* --- Goal Completion Flash --- */
+        .card.goal-complete-flash {
+             border-color: var(--monitor-fg) !important;
+             box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+             transition: border-color 0.1s ease-in, box-shadow 0.1s ease-in;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 8px 15px;
+            border: 1px solid var(--monitor-fg);
+            background-color: var(--monitor-fg);
+            color: var(--monitor-bg);
+            cursor: pointer;
+            font-weight: normal;
+            transition: background-color var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed);
+            text-align: center;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-family: var(--font-family);
+            user-select: none; /* Prevent text selection */
+             -webkit-user-select: none;
+             -moz-user-select: none;
+        }
+
+        .btn:hover {
+            background-color: var(--monitor-fg-accent);
+            border-color: var(--monitor-fg-accent);
+            color: var(--monitor-bg);
+            transform: none; /* No transform */
+        }
+        .btn:active { /* Active state feedback */
+             background-color: var(--monitor-fg-dim);
+             border-color: var(--monitor-fg-dim);
+        }
+        .btn:disabled { /* Disabled state */
+            opacity: 0.5;
+            cursor: not-allowed;
+            background-color: var(--monitor-fg-dim);
+             border-color: var(--monitor-fg-dim);
+        }
+
+        .btn-primary {} /* Placeholder if needed */
+        .btn-secondary {} /* Placeholder if needed */
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            border-color: var(--danger-color);
+            color: var(--monitor-bg);
+            padding: 8px 12px; /* Slightly smaller */
+        }
+        .btn-danger:hover {
+            background-color: var(--monitor-bg); /* Invert on hover */
+            border-color: var(--danger-color);
+            color: var(--danger-color);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: normal;
+            color: var(--monitor-fg);
+            text-transform: uppercase;
+            font-size: 0.9em;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="number"],
+        .form-group select, /* Added select styling */
+        .contribution-input { /* Shared input styles */
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--monitor-border);
+            font-size: 1rem;
+            background-color: var(--monitor-bg);
+            color: var(--monitor-fg);
+            font-family: var(--font-family);
+            transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
+        }
+        .form-group input:focus,
+        .form-group select:focus, /* Added focus for select */
+        .contribution-input:focus {
+            outline: none;
+            border-color: var(--monitor-fg-accent);
+            box-shadow: 0 0 5px rgba(0, 255, 65, 0.5); /* Subtle glow on focus */
+        }
+
+        /* Remove number input spinners */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+        input[type=number] {
+          -moz-appearance: textfield;
+        }
+
+         /* --- Goals Header with Sort Controls --- */
+         .goals-header {
+             display: flex;
+             justify-content: space-between;
+             align-items: flex-end; /* Align bottom */
+             flex-wrap: wrap; /* Allow wrapping on small screens */
+             margin-bottom: 10px;
+             border-bottom: 1px solid var(--monitor-border);
+             padding-bottom: 5px;
+         }
+         .goals-header h2 {
+             margin-bottom: 0; /* Remove bottom margin */
+             border-bottom: none; /* Remove double border */
+             padding-bottom: 0;
+         }
+         .sort-controls {
+             display: flex;
+             gap: 8px;
+             align-items: center;
+              margin-top: 5px; /* Space when wrapped */
+         }
+         .sort-controls label {
+             font-size: 0.85em;
+             text-transform: uppercase;
+             color: var(--monitor-fg-dim); /* Dim label */
+         }
+         .sort-controls select {
+             background-color: var(--monitor-bg);
+             color: var(--monitor-fg);
+             border: 1px solid var(--monitor-border);
+             padding: 4px 6px;
+             font-family: var(--font-family);
+             font-size: 0.85em;
+             cursor: pointer;
+         }
+        .sort-controls select:focus {
+             outline: none;
+             border-color: var(--monitor-fg-accent);
+             box-shadow: 0 0 4px rgba(0, 255, 65, 0.4);
+         }
+
+
+        .goals-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Responsive grid */
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .goal-card {
+            display: flex;
+            flex-direction: column; /* Stack elements vertically */
+        }
+
+        .goal-card h3 {
+            color: var(--monitor-fg);
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            font-weight: normal;
+            border-bottom: 1px dashed var(--monitor-border);
+            padding-bottom: 5px;
+            text-transform: uppercase;
+            word-break: break-word; /* Prevent long names overflowing */
+        }
+
+        .goal-card p {
+            margin-bottom: 6px;
+            font-size: 0.9rem;
+            color: var(--monitor-fg);
+        }
+        .goal-card .goal-target,
+        .goal-card .goal-current {
+            font-weight: normal; /* Ensure consistent weight */
+        }
+        .goal-card .goal-remaining {
+            color: var(--danger-color); /* Danger color for remaining */
+            font-style: normal; /* Not italic */
+            margin-bottom: 10px;
+        }
+        /* --- Goal Meta Info (Date Added & Priority) --- */
+        .goal-card .goal-meta {
+            font-size: 0.75em;
+            color: var(--monitor-fg-dim);
+            margin-top: 5px;
+            text-transform: uppercase;
+        }
+        .goal-card .goal-priority {
+            font-size: 0.8em;
+            text-transform: uppercase;
+            margin-top: 5px; /* Space it out */
+            margin-bottom: 5px;
+        }
+        .goal-priority .priority-label { color: var(--monitor-fg-dim); }
+        .goal-priority .priority-value { font-weight: normal; /* Keep consistent weight */ }
+        .goal-priority .priority-high { color: var(--danger-color); } /* Red for High */
+        .goal-priority .priority-medium { color: var(--monitor-fg-accent); } /* Accent Green for Medium */
+        .goal-priority .priority-low { color: var(--monitor-fg-dim); } /* Dim Green for Low */
+
+
+        .progress-container {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid var(--monitor-border); /* Border around progress */
+            padding: 2px;
+        }
+
+        progress {
+            flex-grow: 1;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none; /* Remove default styles */
+            height: 14px;
+            overflow: hidden;
+            border: none; /* Remove default border */
+            background-color: var(--monitor-bg); /* Match background */
+        }
+        /* Style the progress bar track */
+        progress::-webkit-progress-bar { background-color: var(--monitor-bg); }
+        /* Style the progress bar value */
+        progress::-moz-progress-bar { background-color: var(--monitor-fg); transition: none; } /* No transition for FF */
+        progress::-webkit-progress-value { background-color: var(--monitor-fg); transition: none; } /* No transition for Webkit */
+
+        .progress-text {
+            font-weight: normal;
+            color: var(--monitor-fg);
+            font-size: 0.9rem;
+            min-width: 45px; /* Ensure space for "100%" */
+            text-align: right;
+            white-space: nowrap; /* Prevent wrapping */
+        }
+
+        .goal-actions {
+            margin-top: auto; /* Push actions to the bottom */
+            padding-top: 10px;
+            border-top: 1px solid var(--monitor-border);
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap; /* Allow wrapping */
+        }
+
+        .contribution-input {
+            flex-grow: 1; /* Take available space */
+            padding: 8px;
+            min-width: 70px; /* Minimum width */
+            max-width: 120px; /* Maximum width */
+            font-size: 0.9rem;
+        }
+
+        footer {
+            text-align: center;
+            padding: 10px;
+            margin-top: 20px;
+            color: var(--monitor-fg-dim);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--monitor-border);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hidden { display: none !important; }
+
+        #no-goals-message {
+            text-align: center;
+            color: var(--monitor-fg-dim);
+            font-style: normal; /* Not italic */
+            margin-top: 25px;
+            padding: 15px;
+            border: 1px dashed var(--monitor-border);
+        }
+        /* NEW: Message for when no user is set */
+        #no-user-message {
+            text-align: center;
+            color: var(--danger-color);
+            font-style: normal;
+            margin-top: 25px;
+            padding: 15px;
+            border: 1px dashed var(--danger-color);
+            font-weight: bold;
+        }
+
+
+        /* --- Chatbot FAB --- */
+        #chatbot-fab {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: var(--monitor-fg);
+            color: var(--monitor-bg);
+            border: 1px solid var(--monitor-fg);
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s ease-out, background-color 0.2s ease-out;
+            z-index: 1000;
+        }
+        #chatbot-fab:hover {
+            background: var(--monitor-fg-accent);
+            border-color: var(--monitor-fg-accent);
+            transform: scale(1.05); /* Slight scale on hover */
+        }
+        #chatbot-fab i { font-style: normal !important; /* Override potential italic from FA */ }
+
+        /* --- Chatbot Container --- */
+        #chatbot-container {
+            position: fixed;
+            bottom: 80px; /* Position above FAB */
+            right: 20px;
+            width: 350px;
+            max-width: 90vw;
+            height: 480px;
+            max-height: 75vh;
+            background-color: rgba(10, 10, 10, 0.9); /* Semi-transparent */
+            border: 2px solid var(--monitor-fg);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 999;
+            transform: translateY(20px) scale(0.95); /* Start slightly down and scaled */
+            opacity: 0;
+            visibility: hidden;
+            transition: transform 0.2s ease-out, opacity 0.2s ease-out, visibility 0.2s;
+        }
+        #chatbot-container.active { /* Active state */
+            transform: translateY(0) scale(1);
+            opacity: 1;
+            visibility: visible;
+        }
+
+        #chatbot-header {
+            background: var(--monitor-fg);
+            color: var(--monitor-bg);
+            padding: 8px 12px;
+            font-weight: normal;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: default; /* Default cursor for header */
+        }
+
+        #chatbot-close-btn {
+            background: none; border: none;
+            color: var(--monitor-bg);
+            font-size: 22px; cursor: pointer;
+            opacity: 0.9; font-family: sans-serif; /* Consistent close button */
+            padding: 0 5px; line-height: 1;
+        }
+        #chatbot-close-btn:hover { opacity: 1; color: #000; } /* Darken on hover */
+
+        #chatbot-messages {
+            flex-grow: 1;
+            padding: 12px;
+            overflow-y: auto; /* Enable scrolling */
+            background-color: rgba(0, 0, 0, 0.3); /* Darker message area */
+            border-top: 1px solid var(--monitor-border);
+            border-bottom: 1px solid var(--monitor-border);
+        }
+        /* --- Custom Scrollbar for Chat --- */
+        #chatbot-messages::-webkit-scrollbar { width: 6px; }
+        #chatbot-messages::-webkit-scrollbar-track { background: var(--monitor-bg); }
+        #chatbot-messages::-webkit-scrollbar-thumb { background-color: var(--monitor-fg-dim); border: 1px solid var(--monitor-bg); }
+        #chatbot-messages::-webkit-scrollbar-thumb:hover { background-color: var(--monitor-fg); }
+
+        .chat-message {
+            margin-bottom: 12px; padding: 8px 12px;
+            border: 1px solid var(--monitor-border);
+            max-width: 90%; /* Prevent full width messages */
+            word-wrap: break-word; /* Wrap long words */
+            font-size: 0.9rem; line-height: 1.5;
+            /* --- Animation setup --- */
+            animation-duration: 0.3s;
+            animation-timing-function: ease-out;
+            animation-fill-mode: forwards;
+            opacity: 0; /* Start hidden */
+        }
+        .chat-message.user {
+            background-color: var(--monitor-bg);
+            border-color: var(--monitor-fg-dim); /* Dim border for user */
+            margin-left: auto; /* Align right */ color: var(--monitor-fg);
+            text-align: right;
+             animation-name: slideInUser; /* Use animation */
+        }
+        .chat-message.bot {
+            background-color: var(--monitor-bg);
+            border-color: var(--monitor-border);
+            margin-right: auto; /* Align left */ color: var(--monitor-fg);
+             animation-name: slideInBot; /* Use animation */
+        }
+        /* --- Chat Message Formatting --- */
+         .chat-message strong {
+            font-weight: normal; color: var(--monitor-fg-accent);
+            text-decoration: underline; text-decoration-color: var(--monitor-fg-dim);
+         }
+         .chat-message code {
+             background-color: rgba(0, 255, 65, 0.1); /* Slight background for code */
+             padding: 1px 4px; font-size: 0.85em;
+             border: 1px solid var(--monitor-fg-dim);
+         }
+         .chat-message ul {
+             list-style-type: '- '; /* Custom list bullet */ margin-left: 15px; margin-top: 5px;
+             text-align: left; /* Ensure lists are left-aligned */
+         }
+         .chat-message li { margin-bottom: 3px; }
+         .chat-message pre { /* Style for preformatted text (like JSON export) */
+            background-color: rgba(0,0,0,0.5);
+            border: 1px dashed var(--monitor-fg-dim);
+            padding: 8px;
+            margin-top: 5px;
+            font-size: 0.8em;
+            white-space: pre-wrap; /* Wrap lines */
+            word-break: break-all; /* Break long strings */
+            max-height: 150px; /* Limit height */
+            overflow-y: auto; /* Scroll if needed */
+            text-align: left;
+         }
+
+        #chatbot-input-container {
+            display: flex; padding: 10px;
+            background-color: var(--monitor-bg);
+        }
+        #chatbot-input {
+            flex-grow: 1; padding: 8px;
+            border: 1px solid var(--monitor-border); margin-right: 8px;
+            font-size: 0.9rem; background-color: var(--monitor-bg);
+            color: var(--monitor-fg); font-family: var(--font-family);
+        }
+        #chatbot-input:focus {
+            outline: none; border-color: var(--monitor-fg-accent);
+            box-shadow: 0 0 4px rgba(0, 255, 65, 0.4);
+        }
+        #chatbot-send-btn {
+            padding: 8px 12px; font-size: 0.9rem;
+            min-width: 40px; /* Ensure minimum size */ display: flex;
+            align-items: center; justify-content: center;
+        }
+        #chatbot-send-btn i { font-style: normal !important; font-size: 1em; line-height: 1;}
+
+
+        /* --- Animations --- */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+        @keyframes slideInBot {
+          from { transform: translateX(-15px); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideInUser {
+          from { transform: translateX(15px); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+
+        .animate-on-load { animation: fadeIn 0.5s ease-out forwards; opacity: 0; }
+        .animate-add { animation: fadeIn 0.4s ease-out forwards; }
+        .animate-delete { animation: fadeOut 0.4s ease-in forwards; }
+
+
+        /* --- Responsive Design --- */
+        @media (max-width: 768px) {
+            body { font-size: 14px; }
+            header h1 { font-size: 1.3rem; }
+            main { width: 98%; padding: 10px; margin: 10px auto;}
+            .goals-container { grid-template-columns: 1fr; gap: 15px; }
+             .goals-header { flex-direction: column; align-items: flex-start; } /* Stack header items */
+             .sort-controls { width: 100%; justify-content: flex-end; } /* Move sort to right */
+            .card { padding: 12px; }
+            .goal-actions { flex-direction: column; align-items: stretch; } /* Stack goal actions */
+            .contribution-input { max-width: none; width: 100%; }
+            .btn { width: 100%; } /* Full width buttons in goal actions */
+            .btn-danger { width: auto; align-self: flex-end; } /* Except delete */
+
+            #chatbot-container { width: 95vw; bottom: 70px; right: 2.5vw; height: 400px; }
+            #chatbot-fab { bottom: 15px; right: 15px; width: 45px; height: 45px; font-size: 20px; }
+        }
+
+        @media (max-width: 480px) {
+            body { font-size: 13px; }
+            header h1 { font-size: 1.1rem; letter-spacing: 1px; }
+            h2 { font-size: 1rem; }
+            .goal-card h3 { font-size: 1rem; }
+            .btn { padding: 10px 12px; font-size: 0.9rem; }
+            .goal-card p { font-size: 0.85rem; }
+            .progress-text { font-size: 0.85rem; min-width: 40px;}
+             #chatbot-container { height: 65vh; }
+             .chat-message { font-size: 0.85rem; max-width: 92%; }
+             #chatbot-input { font-size: 0.85rem; }
+             #chatbot-send-btn { padding: 8px 10px; font-size: 0.85rem;}
+             /* Stack sort controls neatly on smallest screens */
+             .sort-controls { flex-direction: column; align-items: flex-end; gap: 5px;}
+             .sort-controls label { width: 100%; text-align: right;}
+             .sort-controls select { width: auto; } /* Allow select to size itself */
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="cmatrix-bg"></canvas>
+
+    <header>
+        <h1>
+            <!-- Updated Greeting structure -->
+            [ <span id="user-greeting">NO USER</span>'S SAVINGS GOALS ]
+            <span id="edit-name-btn" class="hidden" title="Switch User">[SWITCH]</span>
+        </h1>
+    </header>
+
+    <main>
+        <section class="add-goal-section card animate-on-load">
+            <h2>> ADD NEW GOAL_</h2>
+            <form id="goal-form">
+                <div class="form-group">
+                    <label for="goal-name">GOAL NAME:</label>
+                    <input type="text" id="goal-name" required maxlength="100">
+                </div>
+                <div class="form-group">
+                    <label for="goal-target">TARGET AMOUNT (₹):</label> <!-- Currency Change -->
+                    <input type="number" id="goal-target" min="0.01" step="any" required>
+                </div>
+                <!-- NEW Priority Field -->
+                <div class="form-group">
+                     <label for="goal-priority">PRIORITY:</label>
+                     <select id="goal-priority">
+                         <option value="high">HIGH</option>
+                         <option value="medium" selected>MEDIUM</option>
+                         <option value="low">LOW</option>
+                     </select>
+                 </div>
+                <button type="submit" class="btn btn-primary">ADD GOAL</button>
+            </form>
+        </section>
+
+        <section class="goals-display-section">
+             <div class="goals-header">
+                <h2>> CURRENT GOALS_</h2>
+                <div class="sort-controls">
+                     <label for="sort-select">SORT BY:</label>
+                     <select id="sort-select">
+                         <option value="date_desc">DATE ADDED (NEW-OLD)</option>
+                         <option value="date_asc">DATE ADDED (OLD-NEW)</option>
+                         <option value="priority_desc">PRIORITY (HIGH-LOW)</option> <!-- Added Priority Sort -->
+                         <option value="priority_asc">PRIORITY (LOW-HIGH)</option> <!-- Added Priority Sort -->
+                         <option value="name_asc">NAME (A-Z)</option>
+                         <option value="name_desc">NAME (Z-A)</option>
+                         <option value="target_asc">TARGET (LOW-HIGH)</option>
+                         <option value="target_desc">TARGET (HIGH-LOW)</option>
+                         <option value="remaining_asc">REMAINING (LOW-HIGH)</option>
+                         <option value="remaining_desc">REMAINING (HIGH-LOW)</option>
+                         <option value="progress_desc">PROGRESS (% DESC)</option>
+                         <option value="progress_asc">PROGRESS (% ASC)</option>
+                     </select>
+                </div>
+            </div>
+            <div id="goals-list" class="goals-container">
+                <!-- Goals are dynamically added here -->
+            </div>
+            <!-- Modified no goals message -->
+            <p id="no-goals-message" class="hidden">NO ACTIVE GOALS FOUND FOR THIS USER. USE FORM ABOVE OR CHAT COMMAND <code>add goal</code>.</p>
+            <!-- NEW Message for when no user is loaded -->
+            <p id="no-user-message" class="hidden">NO USER LOADED. PLEASE <a href="#" id="set-initial-user-link">SET USER IDENTIFIER</a> TO VIEW OR ADD GOALS.</p>
+        </section>
+    </main>
+
+    <footer>
+        <p>PERSONALIZED SAVINGS TRACKER // SYSTEM READY [5153]</p>
+    </footer>
+
+    <button id="chatbot-fab" title="Chat Assistant">
+         <i class="fa-solid fa-terminal"></i>
+    </button>
+
+    <div id="chatbot-container">
+        <div id="chatbot-header">
+            <span>ASSISTANCE CHATBOT</span>
+            <button id="chatbot-close-btn" title="Close Assistant">×</button>
+        </div>
+        <div id="chatbot-messages">
+            <!-- Chat messages go here -->
+        </div>
+        <div id="chatbot-input-container">
+            <input type="text" id="chatbot-input" placeholder="INPUT COMMAND...">
+            <button id="chatbot-send-btn" class="btn btn-primary" title="Send Message">
+                 <i class="fa-solid fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Element References ---
+            const goalForm = document.getElementById('goal-form');
+            const goalNameInput = document.getElementById('goal-name');
+            const goalTargetInput = document.getElementById('goal-target');
+            const goalPrioritySelect = document.getElementById('goal-priority'); // Added priority select
+            const goalsList = document.getElementById('goals-list');
+            const noGoalsMessage = document.getElementById('no-goals-message');
+            const noUserMessage = document.getElementById('no-user-message');
+            const setInitialUserLink = document.getElementById('set-initial-user-link');
+            const userGreeting = document.getElementById('user-greeting');
+            const editNameBtn = document.getElementById('edit-name-btn');
+            const sortSelect = document.getElementById('sort-select');
+
+            const chatbotFab = document.getElementById('chatbot-fab');
+            const chatbotContainer = document.getElementById('chatbot-container');
+            const chatbotCloseBtn = document.getElementById('chatbot-close-btn');
+            const chatbotMessages = document.getElementById('chatbot-messages');
+            const chatbotInput = document.getElementById('chatbot-input');
+            const chatbotSendBtn = document.getElementById('chatbot-send-btn');
+
+            const canvas = document.getElementById('cmatrix-bg');
+            const ctx = canvas.getContext('2d');
+
+            // --- State Variables ---
+            let goals = []; // This now holds the *active* user's goals
+            let userName = ''; // Currently active user
+            let allUserData = {}; // Object to store data for ALL users { 'USERNAME': { goals: [...], ... }, ... }
+            let currentSortCriteria = 'date_desc'; // Global sort preference
+            let matrixInterval;
+
+            // NEW Versioned key for the updated structure
+            const LOCAL_STORAGE_KEY = 'savingsTrackerData_IBM5153_v3_UserSpecific';
+
+            // --- Utility Functions ---
+            const formatCurrency = (amount) => {
+                // Currency Change: GBP to INR
+                return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
+            };
+
+            const generateId = () => `_${Math.random().toString(36).substr(2, 9)}`;
+
+            const escapeHTML = (str) => {
+                 if (str === null || str === undefined) return '';
+                 const div = document.createElement('div');
+                 div.appendChild(document.createTextNode(String(str)));
+                 return div.innerHTML;
+            };
+
+            // --- Data Persistence ---
+            const saveDataToLocalStorage = () => {
+                try {
+                    if (userName && allUserData[userName]) {
+                        allUserData[userName].goals = [...goals];
+                    } else if (userName) {
+                         allUserData[userName] = { goals: [...goals] };
+                    }
+
+                    const data = {
+                        lastActiveUserName: userName,
+                        allUserData: allUserData,
+                        globalSortCriteria: currentSortCriteria
+                    };
+                    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+                } catch (e) {
+                    console.error("SYSTEM WARNING: Failed to save data to localStorage:", e);
+                    displayMessage("SYSTEM WARNING: Failed to save data. Local storage might be full or disabled.", 'bot');
+                }
+            };
+
+            const loadDataFromLocalStorage = () => {
+                const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+                if (storedData) {
+                    try {
+                        const data = JSON.parse(storedData);
+                        allUserData = data.allUserData || {};
+                        const lastUser = data.lastActiveUserName || '';
+                        currentSortCriteria = data.globalSortCriteria || 'date_desc';
+                        sortSelect.value = currentSortCriteria;
+                        switchUser(lastUser, false); // Switch to the last user, don't save immediately
+
+                    } catch (e) {
+                        console.error("ERROR: Could not parse localStorage data:", e);
+                        allUserData = {}; userName = ''; goals = []; currentSortCriteria = 'date_desc';
+                        localStorage.removeItem(LOCAL_STORAGE_KEY);
+                        alert("ERROR: Could not load saved data. Data seems corrupted and has been reset.");
+                        displayMessage("CRITICAL ERROR: Corrupted save data detected and reset. Previous data lost.", 'bot');
+                        promptForName(true); // Force prompt if data was corrupt
+                    }
+                } else {
+                    allUserData = {}; userName = ''; goals = []; currentSortCriteria = 'date_desc';
+                }
+            };
+
+            // --- UI Update Functions ---
+            const updateGreeting = () => {
+                const safeUserName = escapeHTML(userName);
+                if (userName) {
+                    userGreeting.textContent = `${safeUserName}`;
+                    userGreeting.classList.remove('no-user');
+                    editNameBtn.classList.remove('hidden');
+                    goalForm.style.opacity = '1';
+                    goalForm.querySelectorAll('input, select, button').forEach(el => el.disabled = false); // Include select
+                    goalsList.classList.remove('hidden');
+                    noUserMessage.classList.add('hidden');
+
+                } else {
+                    userGreeting.textContent = 'NO USER';
+                    userGreeting.classList.add('no-user');
+                    editNameBtn.classList.add('hidden');
+                    goalForm.style.opacity = '0.5';
+                    goalForm.querySelectorAll('input, select, button').forEach(el => el.disabled = true); // Include select
+                    goalsList.classList.add('hidden');
+                    noGoalsMessage.classList.add('hidden');
+                    noUserMessage.classList.remove('hidden');
+                }
+                updateChatbotContext();
+            };
+
+             // --- Function to handle switching users ---
+             const switchUser = (newUserName, shouldSave = true) => {
+                const oldUserName = userName;
+                newUserName = newUserName ? newUserName.trim().toUpperCase() : '';
+
+                if (oldUserName && allUserData[oldUserName] && shouldSave) {
+                    allUserData[oldUserName].goals = [...goals];
+                } else if (oldUserName && shouldSave) {
+                    allUserData[oldUserName] = { goals: [...goals] };
+                }
+
+                userName = newUserName;
+
+                if (userName && allUserData[userName]) {
+                    goals = (allUserData[userName].goals || []).map(g => ({
+                        ...g,
+                        current: Number(g.current) || 0,
+                        target: Number(g.target) || 0,
+                        priority: g.priority || 'medium', // Load priority, default to medium
+                        addedDate: g.addedDate || new Date(0).toISOString(),
+                        lastUpdated: g.lastUpdated || g.addedDate || new Date(0).toISOString()
+                    }));
+                } else if (userName) {
+                    allUserData[userName] = { goals: [] };
+                    goals = [];
+                } else {
+                    goals = [];
+                }
+
+                updateGreeting();
+                renderGoals();
+
+                if (shouldSave) {
+                    saveDataToLocalStorage();
+                }
+
+                if (shouldSave && chatbotContainer.classList.contains('active')) {
+                    if (userName) {
+                         displayMessage(`SYSTEM: Switched to user <strong>${escapeHTML(userName)}</strong>. Their goals are now loaded.`, 'bot', true);
+                    } else {
+                         displayMessage(`SYSTEM: No user active. Please set a user to manage goals.`, 'bot');
+                    }
+                } else if (shouldSave && oldUserName && userName && oldUserName !== userName) {
+                    alert(`Switched to user: ${userName}`);
+                }
+             };
+
+            const promptForName = (force = false) => {
+                const promptMessage = force
+                    ? `SWITCH USER\nENTER USER IDENTIFIER [CURRENT: ${userName || 'NONE'}]:`
+                    : `SYSTEM REQUIRES USER IDENTIFICATION.\nENTER NAME TO LOAD/CREATE PROFILE:`;
+                const currentNameToSuggest = userName || '';
+
+                const nameInput = prompt(promptMessage, currentNameToSuggest);
+
+                if (nameInput !== null) {
+                    const trimmedName = nameInput.trim().toUpperCase();
+                    if (trimmedName && trimmedName !== userName) {
+                        switchUser(trimmedName);
+                    } else if (trimmedName && trimmedName === userName) {
+                        // No change
+                    } else if (!trimmedName && force && userName) {
+                         alert("User switch cancelled: Name cannot be empty.");
+                    } else if (!trimmedName && !userName) {
+                         alert("USER IDENTIFIER REQUIRED: Please enter a valid name to begin.");
+                    }
+                }
+            };
+
+            // --- Goal Sorting Logic ---
+            const sortGoals = () => {
+                if (!Array.isArray(goals)) {
+                    console.error("Sort error: goals is not an array for user:", userName);
+                    goals = [];
+                    return;
+                }
+                const [criteria, direction] = currentSortCriteria.split('_');
+                // Priority mapping: High > Medium > Low
+                const priorityMap = { high: 3, medium: 2, low: 1 };
+
+                goals.sort((a, b) => {
+                     let valA, valB;
+                     switch (criteria) {
+                         case 'name': valA = a.name.toLowerCase(); valB = b.name.toLowerCase(); break;
+                         case 'target': valA = a.target; valB = b.target; break;
+                         case 'remaining': valA = Math.max(0, a.target - a.current); valB = Math.max(0, b.target - b.current); break;
+                         case 'progress': valA = a.target > 0 ? (Math.min(a.current, a.target) / a.target) : 0; valB = b.target > 0 ? (Math.min(b.current, b.target) / b.target) : 0; break;
+                         // Added Priority Sorting
+                         case 'priority':
+                             valA = priorityMap[a.priority?.toLowerCase()] || 0; // Default to 0 if missing/invalid
+                             valB = priorityMap[b.priority?.toLowerCase()] || 0;
+                             break;
+                         case 'date': default: valA = new Date(a.addedDate); valB = new Date(b.addedDate); break;
+                     }
+                     let comparison = 0;
+                     if (valA > valB) comparison = 1; else if (valA < valB) comparison = -1;
+                     return direction === 'desc' ? (comparison * -1) : comparison;
+                 });
+            };
+
+            // --- Goal Rendering ---
+            const renderGoals = () => {
+                 if (!userName) {
+                    goalsList.innerHTML = '';
+                    noGoalsMessage.classList.add('hidden');
+                    noUserMessage.classList.remove('hidden');
+                    goalsList.classList.add('hidden');
+                    return;
+                 }
+
+                 noUserMessage.classList.add('hidden');
+                 sortGoals(); // Sort before rendering
+                 goalsList.innerHTML = '';
+
+                 if (goals.length === 0) {
+                     noGoalsMessage.classList.remove('hidden');
+                     goalsList.classList.add('hidden');
+                 } else {
+                     noGoalsMessage.classList.add('hidden');
+                     goalsList.classList.remove('hidden');
+                     goals.forEach(goal => {
+                         const goalElement = createGoalElement(goal);
+                         goalsList.appendChild(goalElement);
+                          if (!goalsList.querySelector(`[data-id="${goal.id}"].rendered`)) {
+                             goalElement.classList.add('animate-add');
+                             goalElement.classList.add('rendered');
+                             setTimeout(() => goalElement.classList.remove('animate-add'), 500);
+                          }
+                     });
+                      setTimeout(() => {
+                          goalsList.querySelectorAll('.rendered').forEach(el => el.classList.remove('rendered'));
+                      }, 600);
+                 }
+            };
+
+            const createGoalElement = (goal) => {
+                const card = document.createElement('div');
+                card.classList.add('goal-card', 'card');
+                card.dataset.id = goal.id;
+
+                const progressValue = Math.max(0, Math.min(goal.current, goal.target));
+                const progressPercent = goal.target > 0 ? Math.round((progressValue / goal.target) * 100) : 0;
+                const remaining = Math.max(0, goal.target - goal.current);
+                const isComplete = goal.current >= goal.target && goal.target > 0;
+                const addedDateStr = goal.addedDate ? new Date(goal.addedDate).toLocaleDateString('en-GB') : 'N/A';
+                const priorityClass = `priority-${goal.priority || 'medium'}`; // Default class if needed
+                const priorityText = (goal.priority || 'medium').toUpperCase(); // Default text
+
+                card.innerHTML = `
+                    <h3>${escapeHTML(goal.name)} ${isComplete ? '[COMPLETE]' : ''}</h3>
+                    <p class="goal-target">TARGET: ${formatCurrency(goal.target)}</p>
+                    <div class="progress-container">
+                        <progress value="${progressValue}" max="${goal.target}"></progress>
+                        <span class="progress-text">${progressPercent}%</span>
+                    </div>
+                    <p class="goal-current">SAVED: ${formatCurrency(goal.current)}</p>
+                    <p class="goal-remaining">REMAINING: ${formatCurrency(remaining)}</p>
+                    <!-- Display Priority -->
+                    <p class="goal-priority">
+                        <span class="priority-label">PRIORITY:</span> <span class="priority-value ${priorityClass}">${escapeHTML(priorityText)}</span>
+                    </p>
+                    <p class="goal-meta">ADDED: ${addedDateStr}</p>
+                    <div class="goal-actions">
+                        <input type="number" class="contribution-input" placeholder="ADD ₹" min="0.01" step="any" aria-label="Add funds to ${escapeHTML(goal.name)}" ${isComplete ? 'disabled' : ''}> <!-- Currency Change -->
+                        <button class="btn btn-secondary btn-add-contribution" ${isComplete ? 'disabled' : ''}>ADD FUNDS</button>
+                        <button class="btn btn-danger btn-delete-goal">DELETE</button>
+                    </div>
+                `;
+
+                const addButton = card.querySelector('.btn-add-contribution');
+                const deleteButton = card.querySelector('.btn-delete-goal');
+                const contributionInputEl = card.querySelector('.contribution-input');
+
+                if (!isComplete) {
+                    addButton.addEventListener('click', () => handleAddContribution(goal.id, card));
+                    contributionInputEl.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') { e.preventDefault(); handleAddContribution(goal.id, card); }
+                    });
+                }
+                deleteButton.addEventListener('click', () => handleDeleteGoal(goal.id, card));
+
+                return card;
+            };
+
+             const updateGoalElement = (goalId) => {
+                 const goal = goals.find(g => g.id === goalId);
+                 if (!goal) return;
+                 let card = goalsList.querySelector(`.goal-card[data-id="${goalId}"]`);
+
+                 if (card) {
+                     const updatedCard = createGoalElement(goal);
+                     card.replaceWith(updatedCard);
+                     card = updatedCard;
+                     card.style.transition = 'border-color 0.1s ease-in-out, box-shadow 0.1s ease-in-out';
+                     card.style.borderColor = 'var(--monitor-fg-accent)';
+                     card.style.boxShadow = '0 0 8px rgba(51, 255, 119, 0.4)';
+                     setTimeout(() => {
+                          if (card && card.style) { // Check if card still exists
+                              card.style.borderColor = ''; card.style.boxShadow = '';
+                          }
+                      }, 300);
+                 } else {
+                      renderGoals(); // Fallback
+                  }
+             };
+
+
+            // --- Core Goal Logic Handlers ---
+            const handleAddGoal = (name, target, priority) => { // Added priority parameter
+                 if (!userName) {
+                    alert("ACTION FAILED: No user is active. Please set user identifier first.");
+                    promptForName(true);
+                    return false;
+                 }
+
+                 name = name.trim();
+                 target = parseFloat(target);
+                 priority = priority || 'medium'; // Default priority if somehow null/undefined
+
+                 if (!name || isNaN(target) || target <= 0) {
+                     alert('INPUT ERROR: VALID GOAL NAME AND POSITIVE TARGET AMOUNT REQUIRED.'); return false;
+                 }
+                 if (goals.some(g => g.name.toLowerCase() === name.toLowerCase())) {
+                     alert(`INPUT ERROR: Goal named "${escapeHTML(name)}" already exists for user ${userName}.`); return false;
+                 }
+                 if (name.length > 100) {
+                     alert('INPUT ERROR: GOAL NAME TOO LONG (MAX 100 CHARACTERS).'); return false;
+                 }
+
+                const now = new Date().toISOString();
+                const newGoal = {
+                    id: generateId(),
+                    name: name,
+                    target: target,
+                    current: 0,
+                    priority: priority, // Save priority
+                    addedDate: now,
+                    lastUpdated: now
+                };
+                goals.push(newGoal);
+                saveDataToLocalStorage();
+                renderGoals();
+                return true;
+            };
+
+            const handleAddContribution = (goalId, cardElement) => {
+                 const contributionInput = cardElement.querySelector('.contribution-input');
+                 const amount = parseFloat(contributionInput.value);
+
+                if (isNaN(amount) || amount <= 0) {
+                    alert('INPUT ERROR: VALID POSITIVE AMOUNT REQUIRED.');
+                    contributionInput.value = ''; contributionInput.focus(); return;
+                }
+
+                 const goalIndex = goals.findIndex(g => g.id === goalId);
+                 if (goalIndex > -1) {
+                     const goal = goals[goalIndex];
+                     const oldCurrent = goal.current;
+                     goal.current = Math.round((oldCurrent + amount) * 100) / 100;
+                     goal.lastUpdated = new Date().toISOString();
+                     const wasCompleted = oldCurrent < goal.target && goal.current >= goal.target;
+
+                     saveDataToLocalStorage();
+                     updateGoalElement(goalId);
+                     contributionInput.value = ''; contributionInput.blur();
+
+                     if (chatbotContainer.classList.contains('active')) {
+                         let message = `OK. <strong>${formatCurrency(amount)}</strong> ADDED TO "<strong>${escapeHTML(goal.name)}</strong>".<br>New balance: ${formatCurrency(goal.current)}.`;
+                         if (wasCompleted) {
+                            message += `<br><strong>TARGET REACHED! CONGRATULATIONS, ${escapeHTML(userName)}!</strong>`;
+                            const updatedCard = goalsList.querySelector(`.goal-card[data-id="${goalId}"]`);
+                            if(updatedCard) { updatedCard.classList.add('goal-complete-flash'); setTimeout(() => updatedCard.classList.remove('goal-complete-flash'), 1000); }
+                         } else {
+                             const remaining = Math.max(0, goal.target - goal.current);
+                             message += ` Remaining: ${formatCurrency(remaining)}.`;
+                         }
+                         displayMessage(message, 'bot', true);
+                     }
+                 } else {
+                     alert('ERROR: Goal not found for current user. Please refresh.');
+                     if (chatbotContainer.classList.contains('active')) { displayMessage(`CRITICAL ERROR: Could not find goal ID ${goalId} for contribution for user ${userName}.`, 'bot'); }
+                 }
+            };
+
+            const handleDeleteGoal = (goalId, cardElement = null) => {
+                 const goalIndex = goals.findIndex(g => g.id === goalId);
+                 if (goalIndex === -1) return false;
+
+                 const goal = goals[goalIndex];
+                 const deletedGoalName = goal.name;
+
+                 if (!cardElement) { cardElement = goalsList.querySelector(`.goal-card[data-id="${goalId}"]`); }
+
+                 if (cardElement) {
+                     cardElement.classList.remove('animate-add');
+                     cardElement.classList.add('animate-delete');
+                     cardElement.addEventListener('animationend', () => {
+                         cardElement.remove();
+                         if (goals.length === 0) { noGoalsMessage.classList.remove('hidden'); goalsList.classList.add('hidden'); }
+                     }, { once: true });
+                 }
+
+                 goals.splice(goalIndex, 1);
+                 saveDataToLocalStorage();
+
+                 if (!cardElement || !cardElement.classList.contains('animate-delete')) {
+                     if (goals.length === 0) { noGoalsMessage.classList.remove('hidden'); goalsList.classList.add('hidden'); }
+                     else if (!cardElement) { renderGoals(); }
+                 }
+
+                 if (chatbotContainer.classList.contains('active')) {
+                     displayMessage(`OK. Goal "<strong>${escapeHTML(deletedGoalName)}</strong>" deleted for user <strong>${escapeHTML(userName)}</strong>.`, 'bot', true);
+                 }
+                 return true;
+            };
+
+
+            // --- Chatbot Functions ---
+            const toggleChatbot = () => {
+                const isActive = chatbotContainer.classList.toggle('active');
+                if (isActive) {
+                     updateChatbotContext();
+                     if (chatbotMessages.children.length === 0) {
+                           displayMessage("SYSTEM BOOT COMPLETE. TRACKER [5153] ONLINE. ASSISTANCE CHATBOT READY.", "bot");
+                           setTimeout(updateChatbotContext, 100);
+                     }
+                     chatbotInput.focus();
+                }
+            };
+
+            const updateChatbotContext = () => {
+                if (!chatbotContainer.classList.contains('active')) return;
+
+                let contextMessage = "";
+                let useHtml = false;
+                if (userName) {
+                    const safeUserName = escapeHTML(userName);
+                    contextMessage = `CURRENT USER: <strong>${safeUserName}</strong>. Commands will affect this user's goals. Type <code>help</code> for options.`;
+                    useHtml = true;
+                } else {
+                    contextMessage = "NO USER ACTIVE. Please use the '[SWITCH]' button or <code>change name [username]</code> command to set a user.";
+                    useHtml = false;
+                }
+                const lastMessage = chatbotMessages.lastElementChild;
+                if (!lastMessage || !lastMessage.textContent.includes(userName ? `CURRENT USER: ${userName}` : "NO USER ACTIVE")) {
+                    displayMessage(contextMessage, 'bot', useHtml);
+                }
+            };
+
+
+            const displayMessage = (text, sender, isRawHtml = false) => {
+                if (!text) return;
+                const messageElement = document.createElement('div');
+                messageElement.classList.add('chat-message', sender);
+                if (isRawHtml) { messageElement.innerHTML = text; }
+                else { messageElement.textContent = text; }
+                chatbotMessages.appendChild(messageElement);
+                chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+            };
+
+            // --- Chatbot Response Logic (getBotResponse) ---
+            const getBotResponse = (userInput) => {
+                const input = userInput.toLowerCase().trim();
+                const safeUserName = escapeHTML(userName || 'NONE');
+                let response = "";
+                let isHtml = false;
+
+                const userRequiredCommands = ["list goals", "ls", "summary", "total saved", "total remaining", "progress", "status", "remaining", "left for", "closest goal", "add goal", "add funds", "delete goal", "export goals"];
+                const requiresUser = userRequiredCommands.some(cmd => input.startsWith(cmd));
+
+                if (requiresUser && !userName) {
+                    response = `ERROR: No user active. Please set a user first using the '[SWITCH]' button or <code>change name [username]</code> command.`;
+                    isHtml = true;
+                    return { text: response, isHtml: isHtml };
+                }
+
+                // --- Command Handling ---
+                if (!input) {
+                    response = "ERROR: NO INPUT DETECTED. PLEASE PROVIDE A COMMAND.";
+                    isHtml = false;
+                }
+                else if (input.startsWith("change name ")) {
+                     const newName = userInput.substring("change name ".length).trim();
+                     if (newName && newName.length > 0 && newName.length < 50) {
+                         const newNameUpper = newName.toUpperCase();
+                         if (newNameUpper !== userName) {
+                             switchUser(newNameUpper);
+                             response = ""; // Feedback provided by switchUser
+                         } else {
+                             response = `USER IDENTIFIER IS ALREADY <strong>${escapeHTML(userName)}</strong>. NO CHANGE MADE.`; isHtml = true;
+                         }
+                     } else {
+                         response = "SYNTAX ERROR: USE <code>change name [YOUR DESIRED NAME]</code>. NAME CANNOT BE EMPTY OR TOO LONG (MAX 50 CHARS)."; isHtml = true;
+                     }
+                 }
+                 else if (["hello", "hi", "hey", "greetings"].includes(input)) {
+                      const greetings = [ `SYSTEM ONLINE, <strong>${safeUserName}</strong>. AWAITING INPUT.`, `GREETINGS, <strong>${safeUserName}</strong>. HOW MAY I ASSIST?`, `STATUS: READY. HELLO, <strong>${safeUserName}</strong>.` ];
+                      response = greetings[Math.floor(Math.random() * greetings.length)]; isHtml = true;
+                 }
+                 else if (input === "who are you" || input === "about") {
+                      response = `I AM THE SAVINGS GOAL TRACKER ASSISTANT [5153]. MY FUNCTION IS TO PROVIDE INFORMATION AND ASSISTANCE REGARDING THE SAVINGS GOALS OF THE CURRENTLY ACTIVE USER: <strong>${safeUserName}</strong>.`; isHtml = true;
+                  }
+                else if (input === "help" || input === "?") {
+                     response = `AVAILABLE COMMANDS (Context: User <strong>${safeUserName}</strong>):<br>
+                            <ul>
+                                <li><code>list goals</code> / <code>ls</code> - Display current user's goals (respects sort order).</li>
+                                <li><code>summary</code> - Overview for current user.</li>
+                                <li><code>total saved</code> - Show total saved by current user.</li>
+                                <li><code>total remaining</code> - Show total needed by current user.</li>
+                                <li><code>progress [goal name]</code> - Show progress for a specific goal (current user).</li>
+                                <li><code>remaining [goal name]</code> - Show remaining amount for a goal (current user).</li>
+                                <li><code>closest goal</code> - Identify current user's goal nearest completion.</li>
+                                <li><code>add goal [name] target [amount] (priority [high/medium/low])</code> - Add goal (priority optional, defaults medium).</li>
+                                <li><code>add funds [amount] to [goal name]</code> - Add funds to a goal (current user).</li>
+                                <li><code>delete goal [goal name]</code> - Delete a goal (current user, requires confirmation).</li>
+                                <li><strong><code>change name [new name]</code> - Switch to/create another user profile.</strong></li>
+                                <li><code>export goals</code> - Display current user's goals data as JSON.</li>
+                                <li><code>tip</code> / <code>suggestion</code> - Provide a random saving suggestion.</li>
+                                <li><code>clear</code> / <code>cls</code> - Clear this chat window.</li>
+                                <li><code>help</code> / <code>?</code> - Display this list.</li>
+                            </ul>`;
+                     isHtml = true;
+                 }
+                else if (input === "list goals" || input === "ls") {
+                     if (goals.length === 0) { response = `NO ACTIVE GOALS FOUND FOR USER <strong>${safeUserName}</strong>.`; isHtml = true; }
+                     else {
+                         sortGoals(); // Ensure sorted based on current setting
+                         response = `CURRENT GOALS FOR <strong>${safeUserName}</strong> (SORTED BY ${currentSortCriteria.replace('_', ' ').toUpperCase()}):<br><ul>`;
+                         goals.forEach(g => {
+                             const progressPercent = g.target > 0 ? Math.round((Math.min(g.current, g.target) / g.target) * 100) : 0;
+                             const priorityText = (g.priority || 'medium').toUpperCase();
+                             response += `<li><strong>${escapeHTML(g.name)}</strong> [${priorityText}]: ${formatCurrency(g.current)} / ${formatCurrency(g.target)} [${progressPercent}%] ${g.current >= g.target && g.target > 0 ? '- COMPLETE' : ''}</li>`;
+                         });
+                         response += "</ul>";
+                         isHtml = true;
+                     }
+                 }
+                 else if (input === "summary") {
+                     const totalSaved = goals.reduce((sum, goal) => sum + goal.current, 0);
+                     const totalTarget = goals.reduce((sum, goal) => sum + goal.target, 0);
+                     const totalRemaining = goals.reduce((sum, goal) => sum + Math.max(0, goal.target - goal.current), 0);
+                     const completedGoals = goals.filter(g => g.current >= g.target && g.target > 0).length;
+                     const highPriority = goals.filter(g => g.priority === 'high').length;
+                     const mediumPriority = goals.filter(g => g.priority === 'medium').length;
+                     const lowPriority = goals.filter(g => g.priority === 'low').length;
+                     response = `GOAL SUMMARY FOR <strong>${safeUserName}</strong>:<br>
+                                - Total Goals: <strong>${goals.length}</strong> (${completedGoals} complete)<br>
+                                - Priorities: ${highPriority} High / ${mediumPriority} Medium / ${lowPriority} Low<br>
+                                - Total Saved: <strong>${formatCurrency(totalSaved)}</strong><br>
+                                - Total Target: ${formatCurrency(totalTarget)}<br>
+                                - Total Remaining: <strong>${formatCurrency(totalRemaining)}</strong>`;
+                     isHtml = true;
+                 }
+                 // --- Goal Modification Commands ---
+                 else if (input.startsWith("add goal ")) {
+                     // Regex to capture name, target, and optional priority
+                     const parts = userInput.match(/^add goal (.*?) target (.*?)(?: priority (high|medium|low))?$/i);
+                     if (parts && parts.length >= 3) {
+                         const name = parts[1].trim();
+                         const targetStr = parts[2].trim().replace(/[^0-9.]/g, ''); // Currency Change - Relaxed regex slightly
+                         const target = parseFloat(targetStr);
+                         const priority = parts[3] ? parts[3].toLowerCase() : 'medium'; // Get priority or default
+
+                         if (handleAddGoal(name, target, priority)) { // Pass priority to handler
+                             response = `OK. New ${priority.toUpperCase()} priority goal <strong>"${escapeHTML(name)}"</strong> [Target: ${formatCurrency(target)}] added for user <strong>${safeUserName}</strong>.`;
+                             goalForm.reset(); // Reset form including priority dropdown
+                         } else {
+                             response = `COMMAND FAILED for user <strong>${safeUserName}</strong>. See alert message for details.`;
+                         }
+                     } else { response = "SYNTAX ERROR: USE <code>add goal [NAME] target [AMOUNT] (priority [high/medium/low])</code>. Priority is optional."; }
+                     isHtml = true;
+                 }
+                else if (input.startsWith("add funds ")) {
+                     const parts = userInput.match(/^add funds (.*?) to (.*?)$/i);
+                     if (parts && parts.length === 3) {
+                        const amountStr = parts[1].trim().replace(/[^0-9.]/g, ''); // Currency Change - Relaxed regex
+                        const amount = parseFloat(amountStr);
+                        const goalName = parts[2].trim();
+
+                        if (isNaN(amount) || amount <= 0) { response = "INPUT ERROR: Amount must be a positive number."; isHtml = false; }
+                        else {
+                            const goal = goals.find(g => g.name.toLowerCase() === goalName.toLowerCase());
+                            if (goal) {
+                                if (goal.current >= goal.target && goal.target > 0) {
+                                    response = `ACTION BLOCKED: Goal <strong>"${escapeHTML(goal.name)}"</strong> for user <strong>${safeUserName}</strong> is already complete.`; isHtml = true;
+                                } else {
+                                    const goalCard = goalsList.querySelector(`.goal-card[data-id="${goal.id}"]`);
+                                    if (goalCard) {
+                                        const inputEl = goalCard.querySelector('.contribution-input'); inputEl.value = amount;
+                                        handleAddContribution(goal.id, goalCard);
+                                        response = ""; // Handler provides feedback
+                                    } else { response = `ERROR: UI element mismatch for goal "<strong>${escapeHTML(goalName)}</strong>". Cannot add funds via chat.`; isHtml = true; }
+                                }
+                            } else { response = `ERROR: Goal "<strong>${escapeHTML(goalName)}</strong>" not found for user <strong>${safeUserName}</strong>.`; isHtml = true; }
+                        }
+                     } else { response = "SYNTAX ERROR: USE <code>add funds [AMOUNT] to [GOAL NAME]</code>."; isHtml = true; }
+                }
+                 else if (input.startsWith("delete goal ")) {
+                     const goalName = userInput.substring("delete goal ".length).trim();
+                     if (!goalName) { response = "SYNTAX ERROR: USE <code>delete goal [GOAL NAME]</code>."; isHtml = true; }
+                     else {
+                         const goal = goals.find(g => g.name.toLowerCase() === goalName.toLowerCase());
+                         if (goal) {
+                              if (confirm(`CHAT COMMAND: CONFIRM DELETION\n----------------\nUSER: ${userName}\nGOAL: "${escapeHTML(goal.name)}"\nSAVED: ${formatCurrency(goal.current)}\nPRIORITY: ${goal.priority?.toUpperCase() || 'N/A'}\n\nTHIS ACTION CANNOT BE UNDONE. PROCEED?`)) {
+                                  if (handleDeleteGoal(goal.id)) { response = ""; }
+                                  else { response = `ERROR: Failed to delete goal "<strong>${escapeHTML(goalName)}</strong>" for user <strong>${safeUserName}</strong>.`; isHtml = true; }
+                              } else { response = `ACTION CANCELLED: Deletion of goal "<strong>${escapeHTML(goalName)}</strong>" for user <strong>${safeUserName}</strong> aborted.`; isHtml = true; }
+                          } else { response = `ERROR: Goal "<strong>${escapeHTML(goalName)}</strong>" not found for deletion for user <strong>${safeUserName}</strong>.`; isHtml = true; }
+                      }
+                  }
+                 else if (input === "export goals") {
+                     if (goals.length === 0) { response = `NO GOALS TO EXPORT FOR USER <strong>${safeUserName}</strong>.`; isHtml = true; }
+                     else {
+                         try {
+                             // Include priority in export
+                             const exportData = goals.map(({ id, name, target, current, priority, addedDate, lastUpdated }) => ({ id, name, target, current, priority: priority || 'medium', addedDate, lastUpdated }));
+                             const jsonString = JSON.stringify(exportData, null, 2);
+                             response = `GOAL DATA EXPORT FOR USER <strong>${safeUserName}</strong> (JSON):<br><pre>${escapeHTML(jsonString)}</pre>`;
+                             isHtml = true;
+                         } catch (e) { console.error("Error exporting goals:", e); response = "ERROR: Failed to generate export data."; isHtml = false; }
+                     }
+                 }
+                 else if (input === "clear" || input === "cls") {
+                     chatbotMessages.innerHTML = '';
+                     setTimeout(() => displayMessage("TERMINAL DISPLAY CLEARED.", 'bot'), 50);
+                     setTimeout(updateChatbotContext, 100);
+                     response = ""; isHtml = false;
+                 }
+                 else if (input === "tip" || input === "suggestion") {
+                     const tips = [
+                        "TIP: Automate small, regular transfers to your savings goal accounts right after payday.",
+                        "TIP: Review your subscriptions (streaming, apps, etc.). Cancel any you don't use regularly.",
+                        "TIP: Try a 'no-spend' challenge for a week or a weekend to identify non-essential spending.",
+                        "TIP: Pack your lunch instead of buying it. The daily savings add up significantly over time!",
+                        "TIP: Use a budgeting app or spreadsheet to track exactly where your money is going.",
+                        "TIP: Set specific, measurable, achievable, relevant, and time-bound (SMART) savings goals.",
+                        "TIP: Consider rounding up your purchases to the nearest ₹10 or ₹50 and transferring the difference to savings.", // Currency Change
+                        "TIP: Look for free entertainment options like parks, libraries, or community events."
+                      ];
+                     response = tips[Math.floor(Math.random() * tips.length)]; isHtml = false;
+                 }
+                 else if (["thank you", "thanks", "ty", "cheers", "dhanyavaad"].includes(input)) { // Currency Change - Added Hindi thanks
+                      const thanks = ["ACKNOWLEDGED.", "YOU ARE WELCOME.", "RESPONSE CONFIRMED.", "GLAD TO ASSIST."]; response = thanks[Math.floor(Math.random() * thanks.length)]; isHtml = false;
+                 }
+                 else if (input.startsWith("progress ") || input.startsWith("status ")) {
+                     const goalName = userInput.substring(input.indexOf(' ') + 1).trim();
+                     if (!goalName) { response = "SYNTAX ERROR: USE <code>progress [GOAL NAME]</code>."; isHtml = true; }
+                     else {
+                         const goal = goals.find(g => g.name.toLowerCase() === goalName.toLowerCase());
+                         if (goal) {
+                             const progressValue = Math.max(0, Math.min(goal.current, goal.target));
+                             const progressPercent = goal.target > 0 ? Math.round((progressValue / goal.target) * 100) : 0;
+                             const remaining = Math.max(0, goal.target - goal.current);
+                             response = `PROGRESS FOR <strong>${escapeHTML(goal.name)}</strong> (User: <strong>${safeUserName}</strong> | Priority: ${goal.priority?.toUpperCase() || 'N/A'}):<br> - SAVED: <strong>${formatCurrency(goal.current)}</strong><br> - TARGET: ${formatCurrency(goal.target)}<br> - REMAINING: <strong>${formatCurrency(remaining)}</strong><br> - COMPLETION: <strong>${progressPercent}%</strong> ${goal.current >= goal.target && goal.target > 0 ? '(COMPLETE)' : ''}`;
+                             isHtml = true;
+                         } else { response = `ERROR: Goal "<strong>${escapeHTML(goalName)}</strong>" not found for user <strong>${safeUserName}</strong>.`; isHtml = true; }
+                     }
+                 }
+                 else if (input.startsWith("remaining ") || input.startsWith("left for ")) {
+                    const goalName = userInput.substring(input.indexOf(' ') + 1).trim();
+                    if (!goalName) { response = "SYNTAX ERROR: USE <code>remaining [GOAL NAME]</code>."; isHtml = true; }
+                    else {
+                        const goal = goals.find(g => g.name.toLowerCase() === goalName.toLowerCase());
+                        if (goal) {
+                            const remaining = Math.max(0, goal.target - goal.current);
+                            if (remaining === 0 && goal.current >= goal.target && goal.target > 0) { response = `GOAL <strong>${escapeHTML(goal.name)}</strong> IS COMPLETE for <strong>${safeUserName}</strong>! <strong>${formatCurrency(0)}</strong> REMAINING.`; }
+                            else { response = `REMAINING FOR <strong>${escapeHTML(goal.name)}</strong> (User: <strong>${safeUserName}</strong>): <strong>${formatCurrency(remaining)}</strong>`; }
+                            isHtml = true;
+                        } else { response = `ERROR: Goal "<strong>${escapeHTML(goalName)}</strong>" not found for user <strong>${safeUserName}</strong>.`; isHtml = true; }
+                    }
+                 }
+                 else if (input === "closest goal") {
+                    const incompleteGoals = goals.filter(g => g.current < g.target && g.target > 0).map(g => ({...g, remainingAbs: Math.max(0, g.target - g.current), progressPerc: g.target > 0 ? (Math.min(g.current, g.target) / g.target) : 0 }));
+                    if (incompleteGoals.length === 0) { response = `ALL GOALS ARE COMPLETE for user <strong>${safeUserName}</strong>!`; isHtml = true; }
+                    else {
+                        // Sort primarily by remaining amount (ascending), then by priority (descending - high first), then progress (descending)
+                        const priorityMap = { high: 3, medium: 2, low: 1 };
+                        incompleteGoals.sort((a, b) => {
+                             if (a.remainingAbs !== b.remainingAbs) return a.remainingAbs - b.remainingAbs;
+                             const prioA = priorityMap[a.priority?.toLowerCase()] || 0;
+                             const prioB = priorityMap[b.priority?.toLowerCase()] || 0;
+                             if (prioA !== prioB) return prioB - prioA; // High priority first
+                             return b.progressPerc - a.progressPerc; // Higher progress first if remaining and priority are equal
+                        });
+                        const closest = incompleteGoals[0];
+                        response = `CLOSEST GOAL TO COMPLETION for <strong>${safeUserName}</strong>: <strong>${escapeHTML(closest.name)}</strong> (Priority: ${closest.priority?.toUpperCase() || 'N/A'})<br>REMAINING: <strong>${formatCurrency(closest.remainingAbs)}</strong> (${Math.round(closest.progressPerc * 100)}% complete).`;
+                        isHtml = true;
+                    }
+                 }
+                 else {
+                     const unrecognizedResponses = [
+                        `ERROR: UNRECOGNIZED COMMAND: <code>${escapeHTML(input)}</code>. TYPE <code>help</code> FOR OPTIONS.`,
+                        `INPUT ERROR: <code>${escapeHTML(input)}</code> NOT A VALID COMMAND. CONSULT <code>help</code>.`,
+                        `SYSTEM MESSAGE: COMMAND <code>${escapeHTML(input)}</code> NOT FOUND.`
+                     ];
+                     response = unrecognizedResponses[Math.floor(Math.random() * unrecognizedResponses.length)];
+                     isHtml = true;
+                 }
+
+                return { text: response, isHtml: isHtml };
+            };
+
+
+            const handleChatMessage = () => {
+                const userInput = chatbotInput.value.trim();
+                if (!userInput) return;
+
+                displayMessage(escapeHTML(userInput.toUpperCase()), 'user');
+                chatbotInput.value = '';
+                chatbotInput.disabled = true; chatbotSendBtn.disabled = true;
+
+                setTimeout(() => {
+                    const botResponseData = getBotResponse(userInput);
+                    if (botResponseData.text) {
+                        displayMessage(botResponseData.text, 'bot', botResponseData.isHtml);
+                    }
+                    chatbotInput.disabled = false; chatbotSendBtn.disabled = false; chatbotInput.focus();
+                }, 300 + Math.random() * 300);
+            };
+
+            // --- Matrix Background Effect (Unchanged) ---
+            const setupMatrix = () => {
+                 if (matrixInterval) clearInterval(matrixInterval);
+                 canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+                 const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()*&^%+-/~{[|`]}';
+                 const fontSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cmatrix-font-size')) || 14;
+                 const columns = Math.floor(canvas.width / fontSize);
+                 const drops = Array(columns).fill(1);
+                 function drawMatrix() {
+                     ctx.fillStyle = `rgba(10, 10, 10, ${getComputedStyle(document.documentElement).getPropertyValue('--cmatrix-bg-alpha') || 0.05})`;
+                     ctx.fillRect(0, 0, canvas.width, canvas.height);
+                     ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--monitor-fg') || '#00ff41';
+                     ctx.font = `${fontSize}px ${getComputedStyle(document.documentElement).getPropertyValue('--font-family')}`;
+                     for (let i = 0; i < drops.length; i++) {
+                         const text = letters[Math.floor(Math.random() * letters.length)];
+                         ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                         if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) { drops[i] = 0; }
+                         drops[i]++;
+                     }
+                 }
+                 matrixInterval = setInterval(drawMatrix, 50);
+            };
+
+
+            // --- Event Listeners ---
+            goalForm.addEventListener('submit', (event) => {
+                 event.preventDefault();
+                 // Pass priority value to the handler
+                 if(handleAddGoal(goalNameInput.value, goalTargetInput.value, goalPrioritySelect.value)) {
+                    goalForm.reset(); // Resets name, target, and priority select
+                    goalNameInput.focus();
+                 }
+            });
+
+            sortSelect.addEventListener('change', (event) => {
+                 currentSortCriteria = event.target.value;
+                 saveDataToLocalStorage();
+                 renderGoals();
+            });
+
+            editNameBtn.addEventListener('click', () => promptForName(true));
+            setInitialUserLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                promptForName(true);
+            });
+
+            chatbotFab.addEventListener('click', toggleChatbot);
+            chatbotCloseBtn.addEventListener('click', toggleChatbot);
+            chatbotSendBtn.addEventListener('click', handleChatMessage);
+            chatbotInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !chatbotInput.disabled) { handleChatMessage(); }
+            });
+
+             window.addEventListener('resize', setupMatrix);
+
+            // --- Initial Setup ---
+            loadDataFromLocalStorage();
+
+            if (!userName) {
+                 updateGreeting();
+                 renderGoals();
+                 setTimeout(() => {
+                      if (!userName) {
+                           alert("Welcome! Please set your user identifier to start tracking goals.");
+                           promptForName(true);
+                      }
+                 }, 100);
+            }
+
+            setupMatrix();
+        });
+    </script>
+
+</body>
+</html>
