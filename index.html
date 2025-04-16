@@ -451,6 +451,9 @@
         #chatbot-fab {
             position: fixed;
             bottom: 20px;
+            /* Adjust right position to avoid overlapping with new credit line if needed */
+            /* Example: right: 240px; (Needs testing) */
+            /* Or leave as is if overlap is acceptable/minor */
             right: 20px;
             width: 50px;
             height: 50px;
@@ -661,6 +664,25 @@
              .sort-controls label { width: 100%; text-align: right;}
              .sort-controls select { width: auto; } /* Allow select to size itself */
         }
+
+        /* --- Style for the Creator Credit --- */
+        #creator-credit {
+            position: fixed; /* Position relative to the viewport */
+            bottom: 5px;    /* Small space from the bottom edge */
+            right: 10px;   /* Small space from the right edge */
+            color: var(--monitor-fg-dim); /* Use the dim monitor color */
+            font-family: var(--font-family); /* Match the font */
+            font-size: 0.75em; /* Make it small */
+            text-transform: uppercase; /* Match footer style */
+            letter-spacing: 0.5px; /* Match footer style */
+            text-shadow: 0 0 2px rgba(0, 255, 65, 0.15); /* Subtle shadow */
+            z-index: 5; /* Above main content/scanlines, below chat FAB */
+            pointer-events: none; /* Prevent it from being clickable */
+            user-select: none; /* Prevent text selection */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+        }
+
     </style>
 </head>
 <body>
@@ -754,6 +776,11 @@
             </button>
         </div>
     </div>
+
+    <!-- ****** ADDED CREATOR CREDIT LINE HERE ****** -->
+    <div id="creator-credit">CREATED BY: AALOK KUMAR YADAV</div>
+    <!-- ******************************************** -->
+
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
