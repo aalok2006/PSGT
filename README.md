@@ -2,9 +2,8 @@
 
 A retro-themed, single-page web application for managing and tracking personal savings goals with multi-user support and an interactive chatbot interface, styled to resemble an old-school computer monitor.
 
-*(Consider adding a screenshot here! Replace the placeholder below)*
-![Screenshot of Savings Goal Tracker](placeholder_screenshot.png)
-*Replace `placeholder_screenshot.png` with the actual path/URL to your screenshot.*
+![image](https://github.com/user-attachments/assets/cffff4cd-a50f-4387-b4c6-a45a9da466f1)
+
 
 ## Features 🚀
 
@@ -125,5 +124,4 @@ Feel free to fork this repository, submit issues, or propose pull requests with 
 
 ## License 📜
 
-*(Choose a license, e.g., MIT, and add it here)*
 MIT License
